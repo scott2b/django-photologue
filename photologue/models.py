@@ -397,26 +397,32 @@ class GalleryUpload(models.Model):
 
 
 class ImageModel(models.Model):
-    image = models.ImageField(_('image'),
-                              max_length=IMAGE_FIELD_MAX_LENGTH,
-                              upload_to=get_storage_path)
-    date_taken = models.DateTimeField(_('date taken'),
-                                      null=True,
-                                      blank=True,
-                                      editable=False)
-    view_count = models.PositiveIntegerField(_('view count'),
-                                             default=0,
-                                             editable=False)
-    crop_from = models.CharField(_('crop from'),
-                                 blank=True,
-                                 max_length=10,
-                                 default='center',
-                                 choices=CROP_ANCHOR_CHOICES)
-    effect = models.ForeignKey('PhotoEffect',
-                               null=True,
-                               blank=True,
-                               related_name="%(class)s_related",
-                               verbose_name=_('effect'))
+    image = models.ImageField(
+        _('image'),
+        max_length=IMAGE_FIELD_MAX_LENGTH,
+        blank=True,
+        upload_to=get_storage_path)
+    date_taken = models.DateTimeField(
+        _('date taken'),
+        null=True,
+        blank=True,
+        editable=False)
+    view_count = models.PositiveIntegerField(
+        _('view count'),
+        default=0,
+        editable=False)
+    crop_from = models.CharField(
+        _('crop from'),
+        blank=True,
+        max_length=10,
+        default='center',
+        choices=CROP_ANCHOR_CHOICES)
+    effect = models.ForeignKey(
+        'PhotoEffect',
+        null=True,
+        blank=True,
+        related_name="%(class)s_related",
+        verbose_name=_('effect'))
 
     class Meta:
         abstract = True
@@ -648,23 +654,30 @@ class ImageModel(models.Model):
 
 @python_2_unicode_compatible
 class Photo(ImageModel):
-    title = models.CharField(_('title'),
-                             max_length=50,
-                             unique=True)
-    slug = models.SlugField(_('slug'),
-                            unique=True,
-                            help_text=_('A "slug" is a unique URL-friendly title for an object.'))
-    caption = models.TextField(_('caption'),
-                               blank=True)
-    date_added = models.DateTimeField(_('date added'),
-                                      default=now)
-    is_public = models.BooleanField(_('is public'),
-                                    default=True,
-                                    help_text=_('Public photographs will be displayed in the default views.'))
+    title = models.CharField(
+        _('title'),
+        max_length=50,
+        blank=True)
+    slug = models.SlugField(
+        _('slug'),
+        unique=True,
+        blank=True,
+        help_text=_('A "slug" is a unique URL-friendly title for an object.'))
+    caption = models.TextField(
+        _('caption'),
+        blank=True)
+    date_added = models.DateTimeField(
+        _('date added'),
+        blank=True,
+        auto_now_add=True)
+    is_public = models.BooleanField(
+        _('is public'),
+        default=True,
+        help_text=_('Public photographs will be displayed in the default views.'))
     tags = TagField(help_text=tagfield_help_text, verbose_name=_('tags'))
-    sites = models.ManyToManyField(Site, verbose_name=_(u'sites'),
-                                   blank=True, null=True)
-
+    sites = models.ManyToManyField(
+        Site, verbose_name=_(u'sites'),
+        blank=True, null=True)
     objects = PassThroughManager.for_queryset_class(PhotoQuerySet)()
 
     class Meta:
@@ -676,9 +689,34 @@ class Photo(ImageModel):
     def __str__(self):
         return self.title
 
+    @classmethod
+    def unique_slug(cls, prefix=''):
+        import random
+        import string
+        if prefix:
+            try:
+                Photo.objects.get(slug=prefix)
+            except Photo.DoesNotExist:
+                return prefix
+        if prefix:
+            vals = string.digits
+            n = 5
+        else:
+            vals = string.ascii_uppercase + string.digits
+            n = 12
+        slug = ''.join(random.choice(vals) for i in range(n))
+        if prefix:
+            slug = prefix + '-' + slug
+        try:
+            p = Photo.objects.get(slug=slug)
+        except Photo.DoesNotExist:
+            return slug
+        return Photo.unique_slug(prefix=prefix)
+
     def save(self, *args, **kwargs):
-        if self.slug is None:
+        if not self.slug:
             self.slug = slugify(self.title)
+        self.slug = self.unique_slug(prefix=self.slug)
         super(Photo, self).save(*args, **kwargs)
 
     def get_absolute_url(self):

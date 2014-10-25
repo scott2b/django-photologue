@@ -1,3 +1,10 @@
+Fork Notice
+===========
+Special thanks to @jdriscoll for this rich set of photo management features.
+This is my personal fork of django-photologue with tweaks for my own
+projects. Please see the original code and licensing information at:
+https://github.com/jdriscoll/django-photologue
+
 Django-photologue
 =================
 

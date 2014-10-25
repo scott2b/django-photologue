@@ -164,23 +164,29 @@ size_method_map = {}
 class Gallery(models.Model):
     date_added = models.DateTimeField(_('date published'),
                                       default=now)
-    title = models.CharField(_('title'),
-                             max_length=50,
-                             unique=True)
-    slug = models.SlugField(_('title slug'),
-                            unique=True,
-                            help_text=_('A "slug" is a unique URL-friendly title for an object.'))
-    description = models.TextField(_('description'),
-                                   blank=True)
-    is_public = models.BooleanField(_('is public'),
-                                    default=True,
-                                    help_text=_('Public galleries will be displayed '
-                                                'in the default views.'))
-    photos = SortedManyToManyField('Photo',
-                                   related_name='galleries',
-                                   verbose_name=_('photos'),
-                                   null=True,
-                                   blank=True)
+    title = models.CharField(
+        _('title'),
+        max_length=50,
+        unique=True)
+    slug = models.SlugField(
+        _('title slug'),
+        unique=True,
+        blank=True,
+        help_text=_('A "slug" is a unique URL-friendly title for an object.'))
+    description = models.TextField(
+        _('description'),
+        blank=True)
+    is_public = models.BooleanField(
+        _('is public'),
+        default=True,
+        help_text=_('Public galleries will be displayed '
+            'in the default views.'))
+    photos = SortedManyToManyField(
+        'Photo',
+        related_name='galleries',
+        verbose_name=_('photos'),
+        null=True,
+        blank=True)
     tags = TagField(help_text=tagfield_help_text, verbose_name=_('tags'))
     sites = models.ManyToManyField(Site, verbose_name=_(u'sites'),
                                    blank=True, null=True)
@@ -192,6 +198,11 @@ class Gallery(models.Model):
         get_latest_by = 'date_added'
         verbose_name = _('gallery')
         verbose_name_plural = _('galleries')
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super(Gallery, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title

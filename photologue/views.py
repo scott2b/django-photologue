@@ -6,7 +6,10 @@ from django.views.generic.dates import ArchiveIndexView, DateDetailView, DayArch
 from django.views.generic.detail import DetailView
 from django.views.generic.list import ListView
 from django.views.generic.base import RedirectView
+from django.views.generic import View
 from django.core.urlresolvers import reverse
+from django.shortcuts import render
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .models import Photo, Gallery
 
@@ -40,8 +43,23 @@ class GalleryListView(ListView):
         return context
 
 
-class GalleryDetailView(DetailView):
-    queryset = Gallery.objects.on_site().is_public()
+#class GalleryDetailView(DetailView):
+#    queryset = Gallery.objects.on_site().is_public()
+
+
+class GalleryDetailView(View):
+
+    def get(self, request, slug):
+        page = request.GET.get('page', 1)
+        gallery = Gallery.objects.get(slug=slug)
+        paginator = Paginator(gallery.public(), PHOTO_PAGINATE_BY)
+        try:
+            photos = paginator.page(page)
+        except PageNotAnInteger:
+            photos = paginator.page(1)
+        except EmptyPage:
+            photos = paginator.page(PHOTO_PAGINATE_BY)
+        return render(request, 'photologue/gallery_detail.html', locals())
 
 
 class GalleryDateView(object):
